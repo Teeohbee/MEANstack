@@ -1,4 +1,4 @@
-var app = angular.module('flapperNews', ['ui.router']);
+var app = angular.module('hackerNews', ['ui.router']);
 
 app.config(['$stateProvider', '$urlRouterProvider', function($stateProvider, $urlRouterProvider) {
 
@@ -6,8 +6,14 @@ app.config(['$stateProvider', '$urlRouterProvider', function($stateProvider, $ur
     .state('home', {
       url: '/home',
       templateUrl: '/home.html',
-      controller: 'MainCtrl'
-    });
+      controller: 'MainCtrl',
+      resolve: {
+        postPromise: ['posts', function(posts) {
+          return posts.getAll();
+        }]
+      }
+    })
+
 
   $stateProvider
     .state('posts', {
@@ -19,11 +25,16 @@ app.config(['$stateProvider', '$urlRouterProvider', function($stateProvider, $ur
   $urlRouterProvider.otherwise('home');
 }]);
 
-app.factory('posts', [function() {
-  var object = {
+app.factory('posts', ['$http', function($http) {
+  var o = {
     posts: []
   };
-  return object;
+
+  o.getAll = function() {
+    return $http.get('/posts').success(function(data) {
+      angular.copy(data, o.posts);
+    });
+  };
 }])
 
 app.controller('MainCtrl', ['$scope', 'posts', function($scope, posts) {
@@ -63,7 +74,9 @@ app.controller('PostsCtrl', ['$scope', '$stateParams', 'posts', function($scope,
   $scope.post = posts.posts[$stateParams.id];
 
   $scope.addComment = function() {
-    if($scope.body === '') { return; }
+    if ($scope.body === '') {
+      return;
+    }
     $scope.post.comments.push({
       body: $scope.body,
       author: 'user',
